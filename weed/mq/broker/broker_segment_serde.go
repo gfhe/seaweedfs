@@ -13,7 +13,7 @@ import (
 )
 
 func (broker *MessageQueueBroker) checkSegmentOnFiler(segment *mq.Segment) (brokers []pb.ServerAddress, err error) {
-	info, found, err := broker.readSegmentOnFiler(segment)
+	info, found, err := broker.readSegmentInfoOnFiler(segment)
 	if err != nil {
 		return
 	}
@@ -32,7 +32,7 @@ func (broker *MessageQueueBroker) saveSegmentBrokersOnFiler(segment *mq.Segment,
 	for _, b := range brokers {
 		nodes = append(nodes, string(b))
 	}
-	broker.saveSegmentToFiler(segment, &mq_pb.SegmentInfo{
+	broker.saveSegmentInfoToFiler(segment, &mq_pb.SegmentInfo{
 		Segment:          segment.ToPbSegment(),
 		StartTsNs:        time.Now().UnixNano(),
 		Brokers:          nodes,
@@ -43,7 +43,7 @@ func (broker *MessageQueueBroker) saveSegmentBrokersOnFiler(segment *mq.Segment,
 	return
 }
 
-func (broker *MessageQueueBroker) readSegmentOnFiler(segment *mq.Segment) (info *mq_pb.SegmentInfo, found bool, err error) {
+func (broker *MessageQueueBroker) readSegmentInfoOnFiler(segment *mq.Segment) (info *mq_pb.SegmentInfo, found bool, err error) {
 	dir, name := segment.DirAndName()
 
 	found, err = filer_pb.Exists(broker, dir, name, false)
@@ -70,7 +70,7 @@ func (broker *MessageQueueBroker) readSegmentOnFiler(segment *mq.Segment) (info 
 	return
 }
 
-func (broker *MessageQueueBroker) saveSegmentToFiler(segment *mq.Segment, info *mq_pb.SegmentInfo) (err error) {
+func (broker *MessageQueueBroker) saveSegmentInfoToFiler(segment *mq.Segment, info *mq_pb.SegmentInfo) (err error) {
 	dir, name := segment.DirAndName()
 
 	var buf bytes.Buffer
