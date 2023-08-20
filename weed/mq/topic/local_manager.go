@@ -1,7 +1,7 @@
 package topic
 
 import (
-	cmap "github.com/orcaman/concurrent-map"
+	cmap "github.com/orcaman/concurrent-map/v2"
 )
 
 // LocalTopicManager manages topics on local broker
