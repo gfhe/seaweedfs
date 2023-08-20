@@ -1,6 +1,10 @@
 package broker
 
 import (
+	"context"
+	"fmt"
+	"github.com/seaweedfs/seaweedfs/weed/mq/topic"
+	"github.com/seaweedfs/seaweedfs/weed/pb"
 	"github.com/seaweedfs/seaweedfs/weed/pb/mq_pb"
 )
 
@@ -67,4 +71,30 @@ func (broker *MessageQueueBroker) Publish(stream mq_pb.SeaweedMessaging_PublishS
 	// 2. find the topic metadata owning filer
 	// 3. write to the filer
 	return nil
+}
+
+// AssignTopicPartitions Runs on the assigned broker, to execute the topic partition assignment
+func (broker *MessageQueueBroker) AssignTopicPartitions(c context.Context, request *mq_pb.AssignTopicPartitionsRequest) (*mq_pb.AssignTopicPartitionsResponse, error) {
+	ret := &mq_pb.AssignTopicPartitionsResponse{}
+	self := pb.ServerAddress(fmt.Sprintf("%s:%d", broker.option.Ip, broker.option.Port))
+
+	for _, partition := range request.TopicPartitionsAssignment.BrokerPartitions {
+		localPartiton := topic.FromPbBrokerPartitionsAssignment(self, partition)
+		broker.localTopicManager.AddTopicPartition(
+			topic.FromPbTopic(request.Topic),
+			localPartiton)
+		if request.IsLeader {
+			for _, follower := range localPartiton.FollowerBrokers {
+				err := pb.WithBrokerClient(false, follower, broker.grpcDialOption, func(client mq_pb.SeaweedMessagingClient) error {
+					_, err := client.AssignTopicPartitions(context.Background(), request)
+					return err
+				})
+				if err != nil {
+					return ret, err
+				}
+			}
+		}
+	}
+
+	return ret, nil
 }
