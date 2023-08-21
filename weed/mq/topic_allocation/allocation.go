@@ -71,3 +71,11 @@ func allocateBrokersForOneTopicPartition(t topic.Topic, brokerPartition *mq_pb.B
 
 	return
 }
+
+func allocateFollowersForOneTopicPartition(t topic.Topic, partition *mq_pb.BrokerPartitionsAssignment, brokers []pb.ServerAddress) (followers []pb.ServerAddress, err error) {
+	return
+}
+
+func allocateLeaderForOneTopicPartition(t topic.Topic, partition *mq_pb.BrokerPartitionsAssignment, brokers []pb.ServerAddress) (leader pb.ServerAddress, err error) {
+	return
+}
