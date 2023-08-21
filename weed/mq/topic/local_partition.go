@@ -3,12 +3,19 @@ package topic
 import (
 	"github.com/seaweedfs/seaweedfs/weed/pb"
 	"github.com/seaweedfs/seaweedfs/weed/pb/mq_pb"
+	"github.com/seaweedfs/seaweedfs/weed/util/log_buffer"
+	"time"
 )
 
 type LocalPartition struct {
 	Partition
 	isLeader        bool
 	FollowerBrokers []pb.ServerAddress
+	logBuffer       *log_buffer.LogBuffer
+}
+
+func (p LocalPartition) Publish(message *mq_pb.PublishRequest_DataMessage) {
+	p.logBuffer.AddToBuffer(message.Key, message.Value, time.Now().UnixNano())
 }
 
 func FromPbBrokerPartitionsAssignment(self pb.ServerAddress, assignment *mq_pb.BrokerPartitionsAssignment) *LocalPartition {

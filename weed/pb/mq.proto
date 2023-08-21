@@ -148,10 +148,18 @@ message PublishRequest {
     message InitMessage {
         Segment segment = 1;
     }
-    InitMessage init = 1;
-    bytes message = 2;
+    message DataMessage {
+        bytes key = 1;
+        bytes value = 2;
+    }
+    oneof message {
+        InitMessage init = 1;
+        DataMessage data = 2;
+    }
+    int64 sequence = 3;
 }
 message PublishResponse {
     int64 ack_sequence = 1;
-    bool is_closed = 2;
+    string error = 2;
+    bool is_closed = 3;
 }

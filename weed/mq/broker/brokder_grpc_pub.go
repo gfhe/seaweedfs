@@ -3,6 +3,7 @@ package broker
 import (
 	"context"
 	"fmt"
+	"github.com/seaweedfs/seaweedfs/weed/glog"
 	"github.com/seaweedfs/seaweedfs/weed/mq/topic"
 	"github.com/seaweedfs/seaweedfs/weed/pb"
 	"github.com/seaweedfs/seaweedfs/weed/pb/mq_pb"
@@ -70,6 +71,41 @@ func (broker *MessageQueueBroker) Publish(stream mq_pb.SeaweedMessaging_PublishS
 	// 1. write to the volume server
 	// 2. find the topic metadata owning filer
 	// 3. write to the filer
+
+	var localTopicPartition *topic.LocalPartition
+	for {
+		req, err := stream.Recv()
+		if err != nil {
+			return err
+		}
+
+		// Process the received message
+		sequence := req.GetSequence()
+		response := &mq_pb.PublishResponse{
+			AckSequence: sequence,
+		}
+		if dataMessage := req.GetData(); dataMessage != nil {
+			if localTopicPartition == nil {
+				response.Error = "topic partition not initialized"
+				glog.Errorf("topic partition not found")
+			} else {
+				localTopicPartition.Publish(dataMessage)
+			}
+		} else if initMessage := req.GetInit(); initMessage != nil {
+			localTopicPartition = broker.localTopicManager.GetTopicPartition(
+				topic.NewTopic(topic.Namespace(initMessage.Segment.Namespace), initMessage.Segment.Topic),
+				topic.FromPbPartition(initMessage.Segment.Partition),
+			)
+			if localTopicPartition == nil {
+				response.Error = fmt.Sprintf("topic partition %v not found", initMessage.Segment)
+				glog.Errorf("topic partition %v not found", initMessage.Segment)
+			}
+		}
+		if err := stream.Send(response); err != nil {
+			glog.Errorf("Error sending setup response: %v", err)
+		}
+	}
+
 	return nil
 }
 

@@ -14,6 +14,12 @@ type Topic struct {
 	Name      string
 }
 
+func NewTopic(namespace Namespace, name string) Topic {
+	return Topic{
+		Namespace: namespace,
+		Name:      name,
+	}
+}
 func FromPbTopic(topic *mq_pb.Topic) Topic {
 	return Topic{
 		Namespace: Namespace(topic.Namespace),
